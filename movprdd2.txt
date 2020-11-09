@@ -1,0 +1,75 @@
+0001                                                                 E
+0002                                                                 E
+0003                                                                 E
+0004                                                                 E
+0005                                                                 E
+0006                                                                 E
+0007                                                                 E
+0008                                                                 E
+0009                                                                 E
+0010                                                                 E
+0011                                                                 C
+0012                                                                 C
+0013                                                                 C
+0014                                                                 C
+0015                                                                 C
+0016                                                                 C
+0017                                                                 C
+0018                                                                 C
+0019                                                                 C
+0020                                                                 C
+0221PAPEL SUL WHI 100FX PACT R1H2 00005010000020000000200000003000010I
+0222PAPEL SUL BLK 250FX PACT R1H3 00015010000020000000300000004000010I
+0223PAPEL SUL YEL 500FX PACT R1H4 00010010000020000000400000005000010I
+0224CD VIRGEM AZUL      UNID X9L1 00003010000005000000010000000400005I
+0225DVD VIRGEM VERDE    UNID X9L2 00005010000005000000020000000800015I
+0226CARTOLINA BRANCA    UNID K2V3 01000050000005000000020000000800015I
+0227FOLHA DE ALMACO REC PACT T8W7 00013005000001000000080000001500030I
+0228BORRACHA PEQN AZUL  UNID G2D2 00100010000005000000030000000800010I
+0229BORRACHA MEDIA VER  UNID G2D3 00001010000005000000080000001800020I
+0230BORRACHA GRANDE AMA UNID G2D4 00150010000005000000150000002800020I
+0031APONT PEQN VERDE                                                 A
+0032                    CAIXA                                        A
+0033                         AAA01                               1011A
+0034REGUA PEQN          UNID I6Y5 111119999977777                5555A
+0035REGUA MEDIA VVVVV   UNID      00000100000000500000090000005200028A
+0036REGUA GRANDE VVVVV  XXXX                     66666666            A
+0037TRANSF PEQN CCCC    WWWWW                            77777777    A
+0038TRANSF MEDIO CCCC   YYYYYVVVVV001150020000030                9999A
+0039TRANSF GRANDE AZUL  UNID VVVVV00005002000003000000200000009500074A
+0040CAD CALIGRAF GRANDE PACT      01050050000005000000500000000500103A
+7041                                                                 C
+7042                                                                 C
+7043                                                                 C
+7044                                                                 C
+7045                                                                 C
+7747                                                                 E
+7748                                                                 E
+7749                                                                 E
+7750                                                                 E
+7751                                                                 E
+0052FICHARIO BATMAN     UNID K2A2 00021001000001000001000000020000200I
+0053CORRETIVO           UNID P8L6 00000001000005000000100000003500050I
+0054COLA LIQUIDA        UNID A4B4 00005005000001000000150000003500050I
+0055COLA BASTAO         UNID A4C4 00014005000001000000200000004000100I
+0056PASTA C/ ELASTICO   UNID T7T7 00080010000005000000050000001000050I
+0300                                                                 C
+0301                                                                 C
+0302                                                                 C
+0303                                                                 C
+0304                                                                 C
+9057TESOURA SEM PONTA   UNID R0R5 00005005000001500000100000002000050A
+9058TESOURA COM PONTA   UNID R0R6 00015005000001500000250000004500100A
+9059GIZ DE CERA         CXA  H8J5 00021010000001000000100000003000050A
+9060PAPEL CREPON        PACT K2A2 00100008000005000000050000001000010A
+9061PAPEL DE SEDA       PACT K2A3 00023008000005000000045000000950010A
+9991                                                                 X
+9992                                                                 X
+9993                                                                 X
+9994                                                                 X
+9995                                                                 X
+9996                                                                 X
+9997                                                                 X
+9998                                                                 X
+9999                                                                 X
+9990                                                                 X
