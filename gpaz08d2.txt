@@ -1,0 +1,535 @@
+      *----------------------------------------------------------------*
+       ID                                  DIVISION.
+      *----------------------------------------------------------------*
+       PROGRAM-ID.                         GPAZ08D2.
+       AUTHOR.                             KARINA.
+      *----------------------------------------------------------------*
+       ENVIRONMENT                         DIVISION.
+      *----------------------------------------------------------------*
+       CONFIGURATION                       SECTION.
+       SPECIAL-NAMES.
+           DECIMAL-POINT IS COMMA.
+       INPUT-OUTPUT                        SECTION.
+       FILE-CONTROL.
+
+           SELECT MOVPRDD2 ASSIGN          TO UT-S-MOVPRDD2
+           FILE STATUS IS FS-MOVPRDD2
+           .
+      *----------------------------------------------------------------*
+       DATA                                DIVISION.
+      *----------------------------------------------------------------*
+       FILE                                SECTION.
+
+       FD  MOVPRDD2
+           RECORDING MODE IS F.
+
+           COPY BK001D2 REPLACING ==::== BY ====.
+      *----------------------------------------------------------------*
+       WORKING-STORAGE                     SECTION.
+      *----------------------------------------------------------------*
+           COPY BK001D2 REPLACING ==::== BY ==WS-==.
+
+           COPY VARDATA.
+
+           COPY VARTEMPO.
+
+           EXEC SQL
+              INCLUDE BK002TP
+           END-EXEC
+
+           EXEC SQL
+              INCLUDE SQLCA
+           END-EXEC
+
+      * INDICATORS
+       01  INDICADORES.
+      *    05 ICODPROD                     PIC S9(04) COMP.
+      *    05 IDESCPROD                    PIC S9(04) COMP.
+           05 IUNIDPROD                    PIC S9(04) COMP.
+           05 ILOCALPROD                   PIC S9(04) COMP.
+           05 IQTDEST                      PIC S9(04) COMP.
+           05 IQTDMAX                      PIC S9(04) COMP.
+           05 IQTDMIN                      PIC S9(04) COMP.
+           05 IPRECOCOMPRA                 PIC S9(04) COMP.
+           05 IPRECOVENDA                  PIC S9(04) COMP.
+           05 IPERCOMIS                    PIC S9(04) COMP.
+
+       01  WS-CONTADORES-COMP.
+           05 WS-CTLIDO                    PIC 9(05) COMP.
+           05 WS-CTINS                     PIC 9(05) COMP.
+           05 WS-CTEXC                     PIC 9(05) COMP.
+           05 WS-CTINV                     PIC 9(05) COMP.
+           05 WS-CTALT                     PIC 9(05) COMP.
+           05 WS-CTCON                     PIC 9(05) COMP.
+
+       01  WS-CONTADORES-FORMATADOS.
+           05 WS-CTLIDO-F                  PIC ZZ.ZZ9.
+           05 WS-CTINS-F                   PIC ZZ.ZZ9.
+           05 WS-CTEXC-F                   PIC ZZ.ZZ9.
+           05 WS-CTINV-F                   PIC ZZ.ZZ9.
+           05 WS-CTALT-F                   PIC ZZ.ZZ9.
+           05 WS-CTCON-F                   PIC ZZ.ZZ9.
+
+       01  FS-MOVPRDD2                     PIC X(02).
+           88 SUCESSO-MOV                          VALUE "00".
+           88 FIM-ARQ-MOV                          VALUE "10".
+
+       01  VAR-CONSULTA.
+           05 CODPROD-FF                   PIC 9999.
+           05 QTDEST-FF                    PIC ZZ.ZZ9.
+           05 QTDMAX-FF                    PIC ZZ.ZZ9.
+           05 QTDMIN-FF                    PIC ZZ.ZZ9.
+           05 PRECOCOMPRA-FF               PIC ZZZ.ZZ9,99.
+           05 PRECOVENDA-FF                PIC ZZZ.ZZ9,99.
+           05 PERCOMIS-FF                  PIC Z9,99.
+
+       77  WS-SQLCODE                      PIC +9(9).
+       77  WS-MSG                          PIC X(60).
+       77  WS-FS                           PIC X(02).
+
+      *----------------------------------------------------------------*
+       PROCEDURE                           DIVISION.
+      *----------------------------------------------------------------*
+           PERFORM 1000-INICIALIZAR
+           PERFORM 3000-PROCESSAR UNTIL FIM-ARQ-MOV
+           PERFORM 3000-TERMINO
+           STOP RUN
+           .
+      *----------------------------------------------------------------*
+       1000-INICIALIZAR.
+           ACCEPT WS-HORARIO-INICIAL FROM TIME
+           INITIALIZE WS-CONTADORES-COMP
+
+           OPEN INPUT MOVPRDD2
+           IF NOT SUCESSO-MOV
+              MOVE "ERRO ABERTURA MOVPRDD2"
+                                           TO WS-MSG
+              MOVE FS-MOVPRDD2             TO WS-FS
+              GO                           TO 9000-ERRO
+           END-IF
+
+           PERFORM 2000-LER-MOVPRDD2
+
+           .
+      *----------------------------------------------------------------*
+       2000-LER-MOVPRDD2.
+           READ MOVPRDD2 INTO WS-REG-MOVPRDD2
+           IF SUCESSO-MOV
+              ADD 1                        TO WS-CTLIDO
+           ELSE
+              IF NOT FIM-ARQ-MOV
+                 MOVE "ERRO LEITURA MOVPRDD2"
+                                           TO WS-MSG
+                 MOVE FS-MOVPRDD2          TO WS-FS
+                 GO                        TO 9000-ERRO
+              END-IF
+           END-IF
+           .
+
+      *----------------------------------------------------------------*
+       3000-PROCESSAR.
+           EVALUATE WS-TIPOMOVTO-D2
+           WHEN "I" PERFORM 3100-INCLUSAO
+           WHEN "E" PERFORM 3200-EXCLUSAO
+           WHEN "A" PERFORM 3300-ALTERACAO
+           WHEN "C" PERFORM 3400-CONSULTAR
+           WHEN OTHER
+              ADD 1                        TO WS-CTINV
+           END-EVALUATE
+
+           PERFORM 2000-LER-MOVPRDD2
+           .
+
+      *----------------------------------------------------------------*
+       3100-INCLUSAO.
+      * MOVER DA VARIAVEL ESPELHO PARA A VARIAVEL HOSPEDEIRA
+           MOVE WS-CODPROD-D2              TO CODPROD
+           MOVE +20                        TO DESCPROD-LEN
+           MOVE WS-DESCPROD-D2             TO DESCPROD-TEXT
+           MOVE WS-UNIDPROD-D2             TO UNIDPROD
+           MOVE WS-LOCALPROD-D2            TO LOCALPROD
+           MOVE WS-QTDEST-D2               TO QTDEST
+           MOVE WS-QTDMAX-D2               TO QTDMAX
+           MOVE WS-QTDMIN-D2               TO QTDMIN
+           MOVE WS-PRECOCOMPRA-D2          TO PRECOCOMPRA
+           MOVE WS-PRECOVENDA-D2           TO PRECOVENDA
+           MOVE WS-PERCOMIS-D2             TO PERCOMIS
+
+      * INSERT USANDO AS VARIAVEIS HOSPEDEIRAS
+           EXEC SQL
+                 INSERT INTO TBPRODUTO
+                 (  CODPROD
+                  , DESCPROD
+                  , UNIDPROD
+                  , LOCALPROD
+                  , QTDEST
+                  , QTDMAX
+                  , QTDMIN
+                  , PRECOCOMPRA
+                  , PRECOVENDA
+                  , PERCOMIS
+                 )
+                 VALUES
+                (  :CODPROD
+                 , :DESCPROD
+                 , :UNIDPROD
+                 , :LOCALPROD
+                 , :QTDEST
+                 , :QTDMAX
+                 , :QTDMIN
+                 , :PRECOCOMPRA
+                 , :PRECOVENDA
+                 , :PERCOMIS
+                )
+           END-EXEC
+
+           EVALUATE SQLCODE
+              WHEN 0    ADD 1              TO WS-CTINS
+              WHEN -803 ADD 1              TO WS-CTINV
+              WHEN -545 ADD 1              TO WS-CTINV
+              WHEN OTHER
+                   MOVE "ERRO INSERT NA TABELA TBPRODUTO"
+                                           TO WS-MSG
+                   MOVE SQLCODE            TO WS-SQLCODE
+                   GO                      TO 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+      *----------------------------------------------------------------*
+       3200-EXCLUSAO.
+           MOVE WS-CODPROD-D2              TO CODPROD
+
+           EXEC SQL
+              DELETE FROM TBPRODUTO
+              WHERE CODPROD = :CODPROD
+           END-EXEC
+
+           EVALUATE SQLCODE
+              WHEN 0    ADD 1              TO WS-CTEXC
+              WHEN +100 ADD 1              TO WS-CTINV
+              WHEN OTHER
+                   MOVE "ERRO DELETE NA TABELA TBPRODUTO"
+                                           TO WS-MSG
+                   MOVE SQLCODE            TO WS-SQLCODE
+                   GO                      TO 9000-ERRO-DB2
+           END-EVALUATE
+           .
+      *----------------------------------------------------------------*
+       3300-ALTERACAO.
+           MOVE WS-CODPROD-D2              TO CODPROD
+
+           EXEC SQL
+              SELECT  CODPROD
+                    , DESCPROD
+                    , UNIDPROD
+                    , LOCALPROD
+                    , QTDEST
+                    , QTDMAX
+                    , QTDMIN
+                    , PRECOCOMPRA
+                    , PRECOVENDA
+                    , PERCOMIS
+              INTO    :CODPROD
+                    , :DESCPROD
+                    , :UNIDPROD       :IUNIDPROD
+                    , :LOCALPROD      :ILOCALPROD
+                    , :QTDEST         :IQTDEST
+                    , :QTDMAX         :IQTDMAX
+                    , :QTDMIN         :IQTDMIN
+                    , :PRECOCOMPRA    :IPRECOCOMPRA
+                    , :PRECOVENDA     :IPRECOVENDA
+                    , :PERCOMIS       :IPERCOMIS
+              FROM  TBPRODUTO
+              WHERE CODPROD = :CODPROD
+           END-EXEC
+
+           EVALUATE SQLCODE
+              WHEN 0
+                   PERFORM 9000-TRATA-INDICATOR
+                   PERFORM 3310-UPDATE
+              WHEN +100
+                   ADD 1              TO WS-CTINV
+              WHEN OTHER
+                   MOVE "ERRO SELECT NA TABELA TBPRODUTO"
+                                           TO WS-MSG
+                   MOVE SQLCODE            TO WS-SQLCODE
+                   GO                      TO 9000-ERRO-DB2
+           END-EVALUATE
+           .
+      *----------------------------------------------------------------*
+       3310-UPDATE.
+           MOVE WS-CODPROD-D2              TO CODPROD
+
+           IF WS-DESCPROD-D2 NOT = SPACES
+              MOVE +20                     TO DESCPROD-LEN
+              MOVE WS-DESCPROD-D2          TO DESCPROD-TEXT
+           END-IF
+
+           IF WS-UNIDPROD-D2 NOT = SPACES
+              MOVE WS-UNIDPROD-D2          TO UNIDPROD
+           END-IF
+
+           IF WS-LOCALPROD-D2 NOT = SPACES
+              MOVE WS-LOCALPROD-D2         TO LOCALPROD
+           END-IF
+
+           IF WS-QTDEST-D2 IS NUMERIC
+              MOVE WS-QTDEST-D2            TO QTDEST
+           END-IF
+
+           IF WS-QTDMAX-D2 IS NUMERIC
+              MOVE WS-QTDMAX-D2            TO QTDMAX
+           END-IF
+
+           IF WS-QTDMIN-D2 IS NUMERIC
+              MOVE WS-QTDMIN-D2            TO QTDMIN
+           END-IF
+
+           IF WS-PRECOCOMPRA-D2 IS NUMERIC
+              MOVE WS-PRECOCOMPRA-D2       TO PRECOCOMPRA
+           END-IF
+
+           IF WS-PRECOVENDA-D2 IS NUMERIC
+              MOVE WS-PRECOVENDA-D2        TO PRECOVENDA
+           END-IF
+
+           IF WS-PERCOMIS-D2 IS NUMERIC
+              MOVE WS-PERCOMIS-D2          TO PERCOMIS
+           END-IF
+
+           EXEC SQL
+              UPDATE TBPRODUTO
+              SET   DESCPROD     = :DESCPROD
+                  , UNIDPROD     = :UNIDPROD
+                  , LOCALPROD    = :LOCALPROD
+                  , QTDEST       = :QTDEST
+                  , QTDMAX       = :QTDMAX
+                  , QTDMIN       = :QTDMIN
+                  , PRECOCOMPRA  = :PRECOCOMPRA
+                  , PRECOVENDA   = :PRECOVENDA
+                  , PERCOMIS     = :PERCOMIS
+              WHERE CODPROD      = :CODPROD
+           END-EXEC
+
+           EVALUATE SQLCODE
+              WHEN 0    ADD 1              TO WS-CTALT
+              WHEN +100 ADD 1              TO WS-CTINV
+              WHEN -545 ADD 1              TO WS-CTINV
+              WHEN OTHER
+                   MOVE "ERRO UPDATE NA TABELA TBPRODUTO"
+                                           TO WS-MSG
+                   MOVE SQLCODE            TO WS-SQLCODE
+                   GO                      TO 9000-ERRO-DB2
+           END-EVALUATE
+           .
+
+      *----------------------------------------------------------------*
+       3400-CONSULTAR.
+           MOVE WS-CODPROD-D2              TO CODPROD
+
+           EXEC SQL
+              SELECT  CODPROD
+                    , DESCPROD
+                    , UNIDPROD
+                    , LOCALPROD
+                    , QTDEST
+                    , QTDMAX
+                    , QTDMIN
+                    , PRECOCOMPRA
+                    , PRECOVENDA
+                    , PERCOMIS
+              INTO    :CODPROD
+                    , :DESCPROD
+                    , :UNIDPROD
+                    , :LOCALPROD
+                    , :QTDEST
+                    , :QTDMAX
+                    , :QTDMIN
+                    , :PRECOCOMPRA
+                    , :PRECOVENDA
+                    , :PERCOMIS
+              FROM  TBPRODUTO
+              WHERE CODPROD = :CODPROD
+           END-EXEC
+
+           IF SQLCODE = 0
+              ADD 1                        TO WS-CTCON
+              PERFORM 9000-TRATA-INDICATOR
+              PERFORM 9000-IMPRIME-PRODUTO
+           ELSE
+              IF SQLCODE = +100
+                 ADD 1                        TO WS-CTINV
+              ELSE
+                 MOVE "ERRO CONSULTA NA TABELA TBPRODUTO"
+                                              TO WS-MSG
+                 MOVE SQLCODE                 TO WS-SQLCODE
+                 GO                           TO 9000-ERRO-DB2
+              END-IF
+           END-IF
+           .
+
+      *----------------------------------------------------------------*
+       3000-TERMINO.
+           CLOSE MOVPRDD2
+           IF NOT SUCESSO-MOV
+              MOVE "ERRO FECHAMENTO MOVPRDD2"
+                                           TO WS-MSG
+              MOVE FS-MOVPRDD2             TO WS-FS
+              GO                           TO 9000-ERRO
+           END-IF
+
+           ACCEPT WS-HORARIO-FINAL FROM TIME
+
+           COPY CALCTEMP.
+
+           MOVE WS-CTLIDO                  TO WS-CTLIDO-F
+           MOVE WS-CTINS                   TO WS-CTINS-F
+           MOVE WS-CTEXC                   TO WS-CTEXC-F
+           MOVE WS-CTINV                   TO WS-CTINV-F
+           MOVE WS-CTCON                   TO WS-CTCON-F
+           MOVE WS-CTALT                   TO WS-CTALT-F
+
+           PERFORM 9000-IMPRIME-DATA
+
+           DISPLAY " "
+           DISPLAY "*------------------------------------------*"
+           DISPLAY "                                            "
+           DISPLAY " EH O BICHO !!!             )/_             "
+           DISPLAY "                  _.--..---'-,--O_          "
+           DISPLAY "             \|..'           ._O__)_        "
+           DISPLAY "     ,-.     _./  _  \..--( /               "
+           DISPLAY "       `\.-''__.-' \ (     \_               "
+           DISPLAY "         `'''       `\__   /\               "
+           DISPLAY "                     /)                     "
+           DISPLAY "*------------------------------------------*"
+           DISPLAY " "
+           DISPLAY "=================================================="
+           DISPLAY "==      ESTATISTICA FINAL DE PROCESSAMENTO      =="
+           DISPLAY "=================================================="
+           DISPLAY "QTDE. PRODUTOS LIDOS MOVPRDD2........: " WS-CTLIDO-F
+           DISPLAY "QTDE. PRODUTOS INSERIDOS TBPRODUTO...: " WS-CTINS-F
+           DISPLAY "QTDE. PRODUTOS EXCLUIDOS TBPRODUTO...: " WS-CTEXC-F
+           DISPLAY "QTDE. PRODUTOS ALTERADOS TBPRPDUTO...: " WS-CTALT-F
+           DISPLAY "QTDE. PRODUTOS CONSULTADOS TBPRODUTO.: " WS-CTCON-F
+           DISPLAY "QTDE. PRODUTOS INVALIDOS.............: " WS-CTINV-F
+           DISPLAY "=================================================="
+           DISPLAY "TEMPO TOTAL DE PROCESSAMENTO.........: "
+                   WS-TEMPO-PROCESSAMENTO
+           DISPLAY "=================================================="
+           DISPLAY "==      TERMINO NORMAL DO PROGRAMA GPAZ08D2     =="
+           DISPLAY "=================================================="
+           .
+
+      *----------------------------------------------------------------*
+       9000-ERRO.
+           DISPLAY "=================================================="
+           DISPLAY "                                                  "
+           DISPLAY "              ._`-\ )\,`-.-.                      "
+           DISPLAY "             \'\` \)\ \)\ \|.)                    "
+           DISPLAY "           \`)  |\)  )\ .)\ )\|                   "
+           DISPLAY "           \ \)\ |)\  `   \ .')/|                 "
+           DISPLAY "          ``-.\ \    )\ `  . ., '(                "
+           DISPLAY "          \\ -. `)\``- ._ .)` |\(,_               "
+           DISPLAY "          `__  '\ `--  _\`. `    (/               "
+           DISPLAY "            `\,\       .\\        /               "
+           DISPLAY "              '` )  (`-.\\       `                "
+           DISPLAY "                 /||\    `.  * _*|                "
+           DISPLAY "                           `-.( `\                "
+           DISPLAY "                               `. \               "
+           DISPLAY "                                `(C               "
+           DISPLAY " DEU ERRO VEJA O FILE STATUS !!!                  "
+           DISPLAY "=================================================="
+           DISPLAY " "
+           DISPLAY "=================================================="
+           DISPLAY "MENSAGEM....: " WS-MSG
+           DISPLAY "FILE STATUS.: " WS-FS
+           DISPLAY "=================================================="
+           DISPLAY "    TERMINO ANORMAL DO GPAZ08D2                   "
+           DISPLAY "=================================================="
+           MOVE 12                         TO RETURN-CODE
+           STOP RUN
+           .
+      *----------------------------------------------------------------*
+       9000-ERRO-DB2.
+           DISPLAY "=================================================="
+           DISPLAY "                                                  "
+           DISPLAY "              ._`-\ )\,`-.-.                      "
+           DISPLAY "             \'\` \)\ \)\ \|.)                    "
+           DISPLAY "           \`)  |\)  )\ .)\ )\|                   "
+           DISPLAY "           \ \)\ |)\  `   \ .')/|                 "
+           DISPLAY "          ``-.\ \    )\ `  . ., '(                "
+           DISPLAY "          \\ -. `)\``- ._ .)` |\(,_               "
+           DISPLAY "          `__  '\ `--  _\`. `    (/               "
+           DISPLAY "            `\,\       .\\        /               "
+           DISPLAY "              '` )  (`-.\\       `                "
+           DISPLAY "                 /||\    `.  * _*|                "
+           DISPLAY "                           `-.( `\                "
+           DISPLAY "                               `. \               "
+           DISPLAY "                                `(C               "
+           DISPLAY " DEU ERRO VEJA O FILE STATUS !!!                  "
+           DISPLAY "=================================================="
+           DISPLAY " "
+           DISPLAY "=================================================="
+           DISPLAY "MESSAGE..: " WS-MSG
+           DISPLAY "SQLCODE..: " WS-SQLCODE
+           DISPLAY "=================================================="
+           DISPLAY "    TERMINO ANORMAL DO GPAZ08D2                   "
+           DISPLAY "=================================================="
+           MOVE 16                         TO RETURN-CODE
+           STOP RUN
+           .
+      *----------------------------------------------------------------*
+       9000-TRATA-INDICATOR.
+           IF IUNIDPROD LESS ZERO
+              MOVE SPACES                  TO UNIDPROD
+           END-IF
+           IF ILOCALPROD LESS ZERO
+              MOVE SPACES                  TO LOCALPROD
+           END-IF
+           IF IQTDEST LESS ZERO
+              MOVE ZEROS                   TO QTDEST
+           END-IF
+           IF IQTDMAX LESS ZERO
+              MOVE ZEROS                   TO QTDMAX
+           END-IF
+           IF IQTDMIN LESS ZERO
+              MOVE ZEROS                   TO QTDMIN
+           END-IF
+           IF IPRECOCOMPRA LESS ZERO
+              MOVE ZEROS                   TO PRECOCOMPRA
+           END-IF
+           IF IPRECOVENDA LESS ZERO
+              MOVE ZEROS                   TO PRECOVENDA
+           END-IF
+           IF IPERCOMIS LESS ZERO
+              MOVE ZEROS                   TO PERCOMIS
+           END-IF
+           .
+      *----------------------------------------------------------------*
+       9000-IMPRIME-PRODUTO.
+           MOVE CODPROD                    TO CODPROD-FF
+           MOVE QTDEST                     TO QTDEST-FF
+           MOVE QTDMAX                     TO QTDMAX-FF
+           MOVE QTDMIN                     TO QTDMIN-FF
+           MOVE PRECOCOMPRA                TO PRECOCOMPRA-FF
+           MOVE PRECOVENDA                 TO PRECOVENDA-FF
+           MOVE PERCOMIS                   TO PERCOMIS-FF
+
+           DISPLAY "=================================================="
+           DISPLAY "==            CONSULTA DE PRODUTOS              =="
+           DISPLAY "=================================================="
+           DISPLAY "CODIGO...................: " CODPROD
+           DISPLAY "DESCRICAO................: " DESCPROD-TEXT
+           DISPLAY "UNIDADE DE VENDA.........: " UNIDPROD
+           DISPLAY "LOCALIZACAO NO ESTOQUE...: " LOCALPROD
+           DISPLAY "QTDE. EM ESTOQUE.........:  " QTDEST
+           DISPLAY "QTDE. MAXIMA ARMAZENADA..:  " QTDMAX
+           DISPLAY "QTDE. MINIMA ARMAZENADA..:  " QTDMIN
+           DISPLAY "PRECO DE COMPRA..........: " PRECOCOMPRA
+           DISPLAY "PRECO DE VENDA...........: " PRECOVENDA
+           DISPLAY "PERCENTUAL DE COMISSAO...:      " PERCOMIS
+           DISPLAY "=================================================="
+           .
+           COPY ROTDATA.
+           .
+
